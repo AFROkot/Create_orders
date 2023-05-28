@@ -1,32 +1,36 @@
 import ccxt 
 import random
 
+
 binace_auth_data = {'apiKey': 'aliF1AwgamcjxBgWWrmznNRWxkyAfUH0OFxq7vPswxHGf0DfpxUkwzAiQ4V2hddf',
                    'secret': 'PEtCQUqxL1bNZ1w3Getx1iMKPql8ynd8Y6XTxwl1t31OYAG6ylkefb4hb6CZnFiF'}
+
 
 exchange = ccxt.binance(binace_auth_data)
 exchange.rateLimit = 0
 exchange.set_sandbox_mode(True)
 market = exchange.load_markets()
 
+
 def chek_balance(ps):
     balance = exchange.fetch_balance()
+    
     if ps['side'] == 'SELL':
         
-        if balance[ps['symbol'][:ps['symbol'].find("/")]]['free'] * exchange.fetch_order_book(ps['symbol'])['bids'][0][0] > volume['volume']:
+        if balance[ps['symbol'][:ps['symbol'].find("/")]]['free'] * exchange.fetch_order_book(ps['symbol'])['bids'][0][0] > ps['volume']:
             return True
         
         else: 
             print('Недостаточно средств')
             return False
         
-    elif balance[ps['symbol'][ps['symbol'].find("/")+1:]]['free'] > volume['volume']:
+    elif balance[ps['symbol'][ps['symbol'].find("/")+1:]]['free'] > ps['volume']:
         return True
     else:
         print('Недостаточно средств')
         return False
-    
-
+	
+	
 def order_volums(ps):
     vol = ps['volume']
     numb = ps['number']
@@ -64,6 +68,7 @@ def order_volums(ps):
         result = order_volums(ps)
     return result
 
+
 def order_prices(ps):
     prices = []
     symbol = ps['symbol']
@@ -79,6 +84,7 @@ def order_prices(ps):
         prices.append(round(random.uniform(ps['priceMin'],ps['priceMax']),exchange.markets[symbol]['precision']['price']))
     return prices
 
+
 def create_orders(ps):
     
     if  chek_balance(ps):
@@ -90,11 +96,11 @@ def create_orders(ps):
         price_list = order_prices(ps)
         
         for i in range(ps['number']):
-            exchange.create_order(symbol,
+            print('orderId:',exchange.create_order(symbol,
                                   type_order,
                                   side,
                                   round(amount_list[i]/price_list[i],exchange.markets[symbol]['precision']['amount']),
-                                  price_list[i])
+                                  price_list[i])['info']['orderId'])
             
             print('exchange.create_order(',
                   symbol,
@@ -124,3 +130,18 @@ def test_prices(ps):
 
     for i in prices:  # проверка на соответствие диапазону
         assert ps['priceMin'] <= i <= ps['priceMax']
+		
+		
+ps = {
+    "symbol": "ETH/USDT",
+   "volume": 1000.0,  # Объем в долларах
+   "number": 5,  # На сколько ордеров нужно разбить этот объем
+   "amountDif": 5.0,  # Разброс в долларах, в пределах которого случайным образом выбирается объем в верхнюю и нижнюю сторону
+   "side": "SELL",  # Сторона торговли (SELL или BUY)
+   "priceMin": 1600.0,  # Нижний диапазон цены, в пределах которого нужно случайным образом выбрать цену
+   "priceMax": 1650.0  # Верхний диапазон цены, в пределах которого нужно случайным образом выбрать цену
+}
+
+test_volums(ps)
+test_prices(ps)
+create_orders(ps)
